@@ -90,7 +90,7 @@ if (isset($_GET['delete']) && isset($_COOKIE['user'])) {
 // FILE UPLOAD
 if (isset($_FILES['file']) && isset($_COOKIE['user'])) {
     $maxSize = 5 * 1024 * 1024; // 5 MB max
-    $allowedTypes = ['image/jpeg','image/gif', 'image/png', 'application/pdf', 'text/plain', 'application/zip','application/rar','application/xz','application/tar','application/bz2','application/wav','application/mov','application/mp3','application/ogg','application/avi','application/ogv','application/flv',];
+    $allowedTypes = ['image/jpeg','image/gif', 'image/png', 'application/pdf', 'text/plain', 'application/zip','application/rar','application/xz','application/tar','application/bz2','application/wav','application/mov','application/mp3','application/ogg','application/avi','application/ogv','application/flv','application/pdf'];
 
     $file = $_FILES['file'];
 
