@@ -73,6 +73,24 @@ if (isset($_GET['download'])) {
     exit;
 }
 
+// IMAGE PREVIEW
+if (isset($_GET['preview'])) {
+    $stmt = $db->prepare("SELECT * FROM files WHERE token = :t");
+    $stmt->bindValue(':t', $_GET['preview']);
+    $file = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
+    $ext = strtolower(pathinfo($file['filename'], PATHINFO_EXTENSION));
+    $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+
+    if ($file && $isImage && (!$file['expires_at'] || $file['expires_at'] > time())) {
+        header("Content-Type: " . mime_content_type($file['filepath']));
+        readfile($file['filepath']);
+    } else {
+        http_response_code(404);
+        echo "Image not found or expired.";
+    }
+    exit;
+}
+
 // DELETE FILE
 if (isset($_GET['delete']) && isset($_COOKIE['user'])) {
     $stmt = $db->prepare("SELECT * FROM files WHERE id = :id AND uploaded_by = :u");
@@ -90,7 +108,7 @@ if (isset($_GET['delete']) && isset($_COOKIE['user'])) {
 // FILE UPLOAD
 if (isset($_FILES['file']) && isset($_COOKIE['user'])) {
     $maxSize = 5 * 1024 * 1024; // 5 MB max
-    $allowedTypes = ['image/jpeg','image/gif', 'image/png', 'application/pdf', 'text/plain', 'application/zip','application/rar','application/xz','application/tar','application/bz2','application/wav','application/mov','application/mp3','application/ogg','application/avi','application/ogv','application/flv','application/pdf'];
+    $allowedTypes = ['image/jpeg','image/gif', 'image/png', 'application/pdf', 'text/plain', 'application/zip','application/rar','application/xz','application/tar','application/bz2','application/wav','application/mov','application/mp3','application/ogg','application/avi','application/ogv','application/flv'];
 
     $file = $_FILES['file'];
 
@@ -158,14 +176,20 @@ $user = $_COOKIE['user'] ?? null;
     $stmt = $db->prepare("SELECT * FROM files WHERE uploaded_by = :u AND (expires_at IS NULL OR expires_at > $now)");
     $stmt->bindValue(':u', $user);
     $files = $stmt->execute();
-    while ($row = $files->fetchArray(SQLITE3_ASSOC)):
-    ?>
-        <div class="file">
-            <?=htmlspecialchars($row['filename'])?> -
-            <a href="?download=<?=$row['token']?>">Download</a> -
-            <a href="?delete=<?=$row['id']?>" onclick="return confirm('Delete this file?')">Delete</a>
-        </div>
-    <?php endwhile; ?>
+	while ($row = $files->fetchArray(SQLITE3_ASSOC)):
+    $ext = strtolower(pathinfo($row['filename'], PATHINFO_EXTENSION));
+    $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+?>
+    <div class="file">
+        <?=htmlspecialchars($row['filename'])?> -
+        <a href="?download=<?=$row['token']?>">Download</a> -
+        <a href="?delete=<?=$row['id']?>" onclick="return confirm('Delete this file?')">Delete</a>
+        <?php if ($isImage): ?>
+            - <a href="?preview=<?=$row['token']?>" target="_blank">Preview</a>
+        <?php endif; ?>
+    </div>
+<?php endwhile; ?>
+
 
 <?php else: ?>
     <h2>Login</h2>
